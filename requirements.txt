@@ -11,3 +11,6 @@ numpy
 pyzmq
 pyinstaller
 pytest
+
+mediapipe
+opencv-python
