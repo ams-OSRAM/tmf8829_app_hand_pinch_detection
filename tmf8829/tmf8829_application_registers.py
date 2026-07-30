@@ -159,6 +159,7 @@ class Tmf8829_application_registers:
 			_CMD_LOAD_CFG_32X32_HIGH_ACCURACY = 70 # Preconfigure for 32x32 short range mode and load configuration page
 			_CMD_LOAD_CFG_48X32 = 71 # Preconfigure for 48x32 default mode and load configuration page
 			_CMD_LOAD_CFG_48X32_HIGH_ACCURACY = 72 # Preconfigure for 48x32 short range mode and load configuration page
+			_CMD_LOAD_CFG_8X8_EXTENDED_RANGE = 73 # Preconfigure for 8x8 extneded range mode and load configuration page
 			_CMD_R_HW = 128 # Read from a 4-byte address
 			_CMD_W_HW = 129 # Write a 4-byte value to a 4-byte address
 			_CMD_W_HW_MASK = 130 # Write a 4-byte masked value to a 4-byte address
@@ -317,6 +318,7 @@ class Tmf8829_application_registers:
 			_CID_CFG_32X32_HIGH_ACCURACY = 70 # Preconfigure for 32x32 short range mode page
 			_CID_CFG_48X32 = 71 # Preconfigure for 48x32 default mode page
 			_CID_CFG_48X32_HIGH_ACCURACY = 72 # Preconfigure for 48x32 short range mode page
+			_CID_CFG_8X8_EXTENDED_RANGE = 73 # Preconfigure for 8x8 extended range mode page
 		def __init__(self):
 			self.cid_rid = self._cid_rid.reset
 

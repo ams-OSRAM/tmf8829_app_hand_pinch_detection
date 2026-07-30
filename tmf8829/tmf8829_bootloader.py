@@ -77,6 +77,8 @@ class Tmf8829Device:
             self.gpio_hal.com.gpioSet(w_mask=self.gpio_hal.com.enable_pin, value=self.gpio_hal.com.enable_pin) 
             self.gpio_hal.com.gpioSet(w_mask=self.gpio_hal.com.enable_pin, value=self.gpio_hal.com.enable_pin) 
             time.sleep(0.003) # wait for 3 milliseconds until the device comes up.
+            if hasattr(self.hal, "i3cAssignDynamicAddress" ):   # only I3C hal needs this
+                self.hal.i3cAssignDynamicAddress( )   # re-assign dynamic address for I3C
             if send_wake_up_sequence:
                 return self.wakeUp(powerup_select=Tmf8829HostRegs.ENABLE._powerup_select._FORCE_BOOTMONITOR)    #force boot monitor
             return True
