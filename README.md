@@ -1,104 +1,85 @@
-# Python files for the tmf8829 device 
+# Hand and pinch detection
 
-Python version 3.10.11 or higher is required.
+Hand detection and pinch detection with TMF8829 dToF sensor in 48x32 mode for a hand in a range up to 500 mm.
 
-## Virtual environment
+This app operates with
+[TMF8829_EVM_DB_DEMO](https://ams-osram.com/products/boards-kits-accessories/kits/ams-tmf8829-evm-db-demo-evaluation-kit)
+or [TMF8829_EVM_EB_SHIELD](https://ams-osram.com/products/boards-kits-accessories/kits/ams-tmf8829-evm-eb-shield-evaluation-kit) boards.
+
+Example hand landmark detection and pinch detection:
+
+![Demo video](./media/Hand_and_pinch_detection.gif)
+
+## Setup
+
+- **Hardware:**
+   - TMF8829 EVM connected to PC - TMF8829_EVM_DB_DEMO or TMF8829_EVM_EB_SHIELD
+   - no additional camera required, only TMF8829.
+- **OS Compatibility:** Windows, Linux, or any platform supporting OpenCV and MediaPipe.
+
+## Installation
+
+### Virtual environment
 
 Recommendation is to set-up a virtual environment. Open your favourite Windows PowerShell, VisualStudio Code etc.
-To install a virtual environment named env, and use it:   
+To install a virtual environment named env, and use it:
 ```sh
 python -m venv env
-./env/Scripts/Activate.ps1    
+# If PowerShell blocks the script, run: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+./env/Scripts/Activate.ps1
 ```
 
-## Requirements
+### Install libraries
 
-To run the scripts in this folder you need to install the packages in the requirements.txt file with:    
+Python version 3.13 or higher is required.
+
+To run the scripts in this folder you need to install the packages in the requirements.txt file with:
+```sh
 pip install -r requirements.txt
+```
 
-All needed python packages are in the subdirectory packages.
+All required python packages are inside the subdirectory packages.
 
-## Folder and sub-folders:
+## Usage
 
-### ./packages
-Needed python packages.
+If you are using [TMF8829_EVM_EB_SHIELD](https://ams-osram.com/products/boards-kits-accessories/kits/ams-tmf8829-evm-eb-shield-evaluation-kit), 
+start [tmf8829_zeromq_server.py](./tmf8829/zeromq/tmf8829_zeromq_server.py) first; this can be done with 
+the pre-compiled server file from [TMF8829_Driver_ZMQ_Server_Client_EXE_\[latest version\].zip](https://ams-osram.com/tmf8829) or inside a separate shell
+```sh
+python tmf8829/zeromq/tmf8829_zeromq_server.py
+```
+If you are using [TMF8829_EVM_DB_DEMO](https://ams-osram.com/products/boards-kits-accessories/kits/ams-tmf8829-evm-db-demo-evaluation-kit), 
+no additional server needs to be started.
 
+### Execute tool
 
-### ./tmf8829
-All python classes, files and functions, specific to the TMF8829.
+Run [tmf8829_hand_detection.py](./tmf8829_hand_detection.py)
 
-##### tmf8829_application.py, tmf8829_application_common.py and tmf8829_bootloader.py:
-The application and bootloader classes have the functionality to control the device hardware and the bootloader and also allows to download intel hex files to the device, measurements and the reading of result and histogram frames.
+```sh
+python tmf8829_hand_detection.py
+```
+This will open an OpenCV window, where the detection result is displayed:
 
-##### tmf8829_application defines.py:
-Application specific defines and structures.
+![Operation](./media/operation.png)
 
-##### tmf8829_conv.py:
-Contains convenience functions.
+### Visualization of depth data in parallel
 
-#### Python register files
+The EVM GUI can be used in parallel to this application, but needs to be started AFTERWARDS.
 
-##### tmf8829_host_regs.py 
-The registers of the Tmf8829 which could be written over I2C or SPI.
+### Configuration
 
-##### tmf8829_application_registers.py:
-Application specific registers.
-
-##### tmf8829_config_page.py:
-Application configuration register page.
-
-### ./tmf8829/examples
-Several examples that show the usage of how to:
-- use the application printer to see results/frames in the terminal
-- visualize pixel results or histograms 
-- log data into a file with json format.
-
-### ./tmf8829/utilities
-
-##### tmf8829_application_printer.py:
-The application printer class supports the printing of the results and histogram frames.
-
-##### tmf8829_json_2_csv.py
-Convert log files from json format to csv format
-
-##### tmf8829_logger_service.py
-Provides functionality to dump the data into a file with json format or to log data into a textfile.
+Update file [cfg_client.json](./tmf8829/zeromq/cfg_client.json) with following examples:
+- Parameter **period** [in ms] to modify speed of detection - takes only effect if speed is not defined by iterations.
+- Parameter **iterations** [in k iterations] is used to change performance of detection
 
 
-##### tmf8829_visualisation.py
-Functionality to visualize pixel data or histograms.
+# Info
 
-### ./tmf8829/zeromq
+This is a fork of [tmf8829_driver_python](https://github.com/ams-OSRAM/tmf8829_driver_python) modifying files to create an application, which can run together with TMF8829_EVM_DB_DEMO or TMF8829_EVM_EB_SHIELD.
 
-zeroMQ is an open source universal messaging library.
-zeroMq server implementations for the tmf8829 EVMs are available and for host interaction a zeroMq client.
+As this work relies heavily on OpenCV and MediaPipe, it should run on Windows, Linux or platforms where these libraries are already ported. For MediaPipe, the dToF depth and intensity image is mapped to a synthetic image grid to feed MediaPipe's pipeline.
 
-##### TMF8829_zeromq_protocol.md
-The protocol description.
+# Credits
 
-##### tmf8829_host_com_reg.py
-The definition of the protocol header.
-
-##### tmf8829_zeromq_common.py
-Common functions for the client and server.
-
-##### tmf8829_zeromq_client.py
-Client that could be used as active or passive logger
-
-##### tmf8829_zeromq_server_core.py
-Common functions for the different server scripts.
-
-##### tmf8829_zeromq_server.py
-Server for the EVM shield board.
-
-##### tmf8829_zeromq_server_linux.py
-Server for the evm linux board.
-
-##### tmf8829_zeromq_server_arduino.py
-Server for the Arduino board.
-
-##### cfg_client.json
-TMF8829 configuration for active logging and general logging parameters.
-
-##### cfg_server.json
-TMF8829 configuration at startup of the server.
+- **[MediaPipe](https://github.com/google-ai-edge/mediapipe)** - Hand landmark model and MediaPipe (Apache 2.0 license).
+- **[OpenCV](https://opencv.org)** - Open Source Computer Vision Library (Apache 2.0 License).
