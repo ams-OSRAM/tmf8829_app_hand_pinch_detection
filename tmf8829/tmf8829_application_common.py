@@ -13,6 +13,7 @@ for applications with device connection.
 import __init__
 
 import ctypes
+import math
 
 from tmf8829_application_defines import *
 from tmf8829_application_registers import Tmf8829_application_registers as Tmf8829AppRegs
@@ -42,11 +43,14 @@ class Tmf8829AppCommon():
     
     RESULT_FRAME_SUBIDX_SHIFT = Tmf8829ConfigRegs.TMF8829_CFG_RESULT_FORMAT._sub_result.shift
     RESULT_FRAME_SUBIDX_MASK =  Tmf8829ConfigRegs.TMF8829_CFG_RESULT_FORMAT._sub_result.mask    # sub-result frame bit
+
+    RESERVED_FRAME_DISTANCE_IN_MM = 1 # if reserved field in footer has bit 0 set than this means that the distance is in mm not 1/4mm
     
-    VERSION = 1.10
+    VERSION = 1.12
     """Version log
     - 1.0 ... splitted up tmf8829_application to tmf8829_application_common and tmf8829_application
-
+    - 1.11 ... point cloud correction: fov correction option added
+    - 1.12 ... support to differenciate between 1mm distances and 1/4mm distances per frame
     """
 
     @staticmethod
@@ -390,18 +394,23 @@ class Tmf8829AppCommon():
         return result_frames, histo_frames, ref_frames
 
     @staticmethod
-    def getFullPixelResult(frames, toMM = False, deleteNone = True, pointCloud = False, distanceToXYZ =False):
+    def getFullPixelResult(frames, toMM = False, deleteNone = True, pointCloud = False, distanceToXYZ = False, fov_correction = None):
         """Function that takes the result frames, and returns a list with tmf8829MPResult structures for every pixel.
         Args:
             frames: list[bytearray] the result frames in the right order as received by the device.
-            toMM: Changes the distance results from 0.25mm to mm. Note do not use this option if the results are in bins
+            toMM: Changes the distance results from 0.25mm to mm. Note do not use this option if the results are in bins \
+                  or for the mode CMD_LOAD_CFG_8X8_EXTENDED_RANGE.
             deleteNone: Remove None items from MP Results.
             pointCloud: do point cloud correction, only done if distanceToXYZ = False
             distanceToXYZ: reports distance the xyz values, if this option is used, the distance will not be point cloud corrected.
+            fov_correction: None or value from 0-15
+                If provided, reported fov_correction value from TMF8829
+                This is the residual of the FOV correction and used to improve accuracy. 
         Returns:
             List[row][col] tmf8829MPResult structures
         """
         _header = tmf8829FrameHeader.from_buffer_copy( frames[0][Tmf8829AppCommon.PRE_HEADER_SIZE:Tmf8829AppCommon.PRE_HEADER_SIZE+ctypes.sizeof(struct__tmf8829FrameHeader)])
+        _footer = tmf8829FrameFooter.from_buffer_copy( frames[0][Tmf8829AppCommon.PRE_HEADER_SIZE + 4 + _header.payload - ctypes.sizeof(struct__tmf8829FrameFooter):])  # +4 for FrameID, Layout, Payload fields
         fpMode = _header.id & TMF8829_FPM_MASK
 
         pixelResults = Tmf8829AppCommon.getPixelResultsFromFrame(list(frames[0]),fpMode,resultFormat=_header.layout)
@@ -411,14 +420,14 @@ class Tmf8829AppCommon():
             for row in range(len(resultsMpDownRow)):
                 pixelResults.insert(row*2+1, resultsMpDownRow[row]) 
         
-        if toMM:
+        if toMM and (_footer.reserved & Tmf8829AppCommon.RESERVED_FRAME_DISTANCE_IN_MM ) == 0 :                  # if reserved is set then the results are already in mm 
             pixelResults = Tmf8829AppCommon.pixelResultsToMM(pixelResults)
 
         if deleteNone:
             pixelResults = Tmf8829AppCommon.pixelResultsDeleteNoneParam(pixelResults)
 
         if (pointCloud == True) or (distanceToXYZ  == True):
-            Tmf8829AppCommon.pixelResults3dPointcloudCorr(pixelResults, fpMode, reportXYZ= distanceToXYZ)
+            Tmf8829AppCommon.pixelResults3dPointcloudCorr(pixelResults, fpMode, reportXYZ= distanceToXYZ, fov_correction=fov_correction)
 
         return pixelResults
 
@@ -441,7 +450,7 @@ class Tmf8829AppCommon():
         return pixelResults
     
     @staticmethod
-    def pixelResults3dPointcloudCorr(pixelResults, fp_mode, reportXYZ=False):
+    def pixelResults3dPointcloudCorr(pixelResults, fp_mode, reportXYZ=False, fov_correction = None):
         """Function changes the distance results with the 3d Point cloud correction.
             fpMode (int): is one of the following: FP_MODE_8x8A, FP_MODE_8x8B,
             FP_MODE_16x16, FP_MODE_32x32, FP_MODE_32x32s or FP_MODE_48x32
@@ -450,6 +459,9 @@ class Tmf8829AppCommon():
             fpMode (int): is one of the following: FP_MODE_8x8A, FP_MODE_8x8B,
                 FP_MODE_16x16, FP_MODE_32x32, FP_MODE_32x32s or FP_MODE_48x32
             reportXYZ: instead of distance xyz values are reported
+            fov_correction: None or value from 0-15
+                If provided, reported fov_correction value from TMF8829
+                This is the residual of the FOV correction and used to improve accuracy. 
         Returns:
             list[list[tmf8829MPResult]]: tmf8829MPResult structures; List[row][col]
             or 
@@ -460,9 +472,9 @@ class Tmf8829AppCommon():
             for x, pixel in enumerate( pixelRow ):
                  # get correction factor
                 if reportXYZ:
-                    zCorrSimple, x_dist, y_dist = Tmf8829AppCommon.zCorrection(pixel_x=x,pixel_y=y,fp_mode=fp_mode, getxy=reportXYZ)
+                    zCorrSimple, x_dist, y_dist = Tmf8829AppCommon.zCorrection(pixel_x=x,pixel_y=y,fp_mode=fp_mode, getxy=reportXYZ,fov_correction=fov_correction)
                 else: 
-                    zCorrSimple = Tmf8829AppCommon.zCorrection(pixel_x=x,pixel_y=y,fp_mode=fp_mode)
+                    zCorrSimple = Tmf8829AppCommon.zCorrection(pixel_x=x,pixel_y=y,fp_mode=fp_mode,fov_correction=fov_correction)
                 for peak in pixel['peaks']:
                     if peak['distance'] != None:
                         if reportXYZ:
@@ -604,7 +616,7 @@ class Tmf8829AppCommon():
         return pixelResults
     
     @staticmethod
-    def zCorrection(pixel_x, pixel_y, fp_mode, getxy = False ):
+    def zCorrection(pixel_x, pixel_y, fp_mode, getxy = False, fov_correction = None ):
         """Calculates the correction factor for the (virtual) pixel based on the 
         number of spad-per-pixel, and the x/y coordinates of the pixel. Note that this are virtual
         pixels. 
@@ -617,10 +629,13 @@ class Tmf8829AppCommon():
             pixel_y: y-index of the virtual pixel (0..7, 0..15, 0..31)
             fp_mode: 0/1 = 8x8, 2 = 16x16, 3/4 = 32x32, else 48x32
             getxy: reports x and y
+            fov_correction: None or value from 0-15
+                If provided, reported fov_correction value from TMF8829
+                This is the residual of the FOV correction and used to improve accuracy.
         Returns:
             Return a correction factor for x/y position for a single pixel, if getxy = True reports x and y
         """
-        import math
+
         if fp_mode == 0 or fp_mode == 1:
             X = 8
             Y = 8
@@ -636,8 +651,15 @@ class Tmf8829AppCommon():
         spanX = X * 3.0 / 4.0    
         spanY = Y
 
-        x = ( pixel_x - (X/2) + 0.5 ) / spanX
-        y = ( pixel_y - (Y/2) + 0.5 ) / spanY
+        if (fov_correction):
+            fov_corr_x = fov_correction & 0b11        # bits 0-1; coding in 16x16 sub-macropixel
+            fov_corr_y = (fov_correction >> 2) & 0b11 # bits 2-3
+            # apply now fov correction by up to 1/2 macropixel of a 16x16 macropixel
+            x = ( pixel_x - (X/2) + 0.5 ) / spanX - ( fov_corr_x - 1.5 ) / 2.5 / 16
+            y = ( pixel_y - (Y/2) + 0.5 ) / spanY - ( fov_corr_y - 1.5 ) / 2.5 / 16
+        else: 
+            x = ( pixel_x - (X/2) + 0.5 ) / spanX
+            y = ( pixel_y - (Y/2) + 0.5 ) / spanY
 
         if getxy:
             return math.sqrt( 1 + x*x + y*y ), x, y
