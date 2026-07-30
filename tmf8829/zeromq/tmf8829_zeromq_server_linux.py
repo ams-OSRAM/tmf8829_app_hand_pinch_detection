@@ -20,7 +20,7 @@ UPDATE_FOLDER = "/tmp/tmf8829/update"
 
 ### DRIVER ATTRIBUTES ###
 DRIVER_PATH       = "/sys/class/i2c-adapter/i2c-0/0-0041/"
-
+DRIVER_PATH_SPI   = "/sys/class/spi_master/spi0/spi0.0/"
 PROGRAM           = "tmf8829_common/program"
 PROGRAM_VERSION   = "tmf8829_common/program_version"
 REGISTERS         = "tmf8829_common/registers"
@@ -58,20 +58,34 @@ class ZeroMqLinuxServer(ZeroMqServer):
     The data socket provides unidirectional measurement results and optional histograms.
     Server for TMF8829 Linux Driver.
     """
-    VERSION = 0x0001
+    VERSION = 0x0002
     """Version 
     - 1 First zeromq server release version
+    - 2 Driver path to I2C or SPI device working
     -
     """
     APPLICATION_ID = 0x01
     BOOTLOADER_ID = 0x80
 
     def __init__(self, cmd_poll_interval=1.0) -> None:
+        global DRIVER_PATH
+        global DRIVER_PATH_SPI
         super().__init__(cmd_poll_interval=cmd_poll_interval)
         self.fpMode = 0
         self.rawHistograms = 0
         self.dualMode = 0
         self.hostType = TMF8829_ZEROMQ_HOST_RASPBERRY_BOARD 
+        
+        obj = Path(DRIVER_PATH)
+        if obj.exists():
+            logger.debug("I2C linux driver.")
+        else:
+            obj = Path(DRIVER_PATH_SPI)
+            if obj.exists():
+                DRIVER_PATH = DRIVER_PATH_SPI
+                logger.debug("SPI linux driver.")
+            else:
+                logger.debug("- - - NO TMF8829 LINUX DRIVER FOUND ! ! ! - - -")
 
 
     def _process_results(self):
@@ -312,6 +326,8 @@ class ZeroMqLinuxServer(ZeroMqServer):
 #####################################################################################
 ### ZERO MQ SERVER - MAIN                                                         ###
 #####################################################################################
+TMF8829_ZEROMQ_CMD_SERVER_LOCAL = "tcp://*:5557" # macro
+TMF8829_ZEROMQ_RESULT_SERVER_LOCAL = "tcp://*:5558" # macro
 
 if __name__ == "__main__":
     import pathlib
@@ -319,7 +335,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,format='%(levelname)s %(name)s.%(funcName)s:%(lineno)d %(message)s')
 
     server = ZeroMqLinuxServer(cmd_poll_interval = 0.0001)
-    server.start(cmd_addr= TMF8829_ZEROMQ_CMD_LINUX_SERVER_ADDR, result_addr=TMF8829_ZEROMQ_RESULT_LINUX_SERVER_ADDR)
+    server.start(cmd_addr= TMF8829_ZEROMQ_CMD_SERVER_LOCAL, result_addr=TMF8829_ZEROMQ_RESULT_SERVER_LOCAL)
 
     try:
         while True:

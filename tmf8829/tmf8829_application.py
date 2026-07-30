@@ -24,7 +24,7 @@ class Tmf8829Application(Tmf8829Bootloader, Tmf8829AppCommon):
     """The TMF8829 application class for the Shield Evm Board.
     """
     
-    VERSION = 1.13
+    VERSION = 1.14
     """Version log
     - 1.0 First  version
     - 1.1 add FP mode 48x32
@@ -40,6 +40,7 @@ class Tmf8829Application(Tmf8829Bootloader, Tmf8829AppCommon):
     - 1.11 splitted up tmf8829_application to tmf8829_application_common and tmf8829_application
     - 1.12 support for motion detection and proximity 
     - 1.13 check in stop Measurement if device is wakeup; for standby timed mode
+    - 1.14 added support for 8x8 extended range mode, and 24-bit spad select in any 8x8 mode
     """
 
     def __init__(self, hal:HalRegisterIo, gpio_hal:HalRegisterIo=None ):
@@ -139,8 +140,9 @@ class Tmf8829Application(Tmf8829Bootloader, Tmf8829AppCommon):
             int: the read-back response
         """
         
-        if (cmd >= Tmf8829AppRegs.TMF8829_CMD_STAT._cmd_stat._CMD_LOAD_CFG_8X8) and \
-            (cmd <= Tmf8829AppRegs.TMF8829_CMD_STAT._cmd_stat._CMD_LOAD_CFG_8X8_HIGH_ACCURACY):
+        if ((cmd >= Tmf8829AppRegs.TMF8829_CMD_STAT._cmd_stat._CMD_LOAD_CFG_8X8) and \
+            (cmd <= Tmf8829AppRegs.TMF8829_CMD_STAT._cmd_stat._CMD_LOAD_CFG_8X8_HIGH_ACCURACY) ) or\
+            (cmd == Tmf8829AppRegs.TMF8829_CMD_STAT._cmd_stat._CMD_LOAD_CFG_8X8_EXTENDED_RANGE):
             self.cfg_fpMode = 0 
         elif (cmd >= Tmf8829AppRegs.TMF8829_CMD_STAT._cmd_stat._CMD_LOAD_CFG_16X16) and \
             (cmd <= Tmf8829AppRegs.TMF8829_CMD_STAT._cmd_stat._CMD_LOAD_CFG_16X16_HIGH_ACCURACY):
@@ -225,7 +227,8 @@ class Tmf8829Application(Tmf8829Bootloader, Tmf8829AppCommon):
                   spr_spec_single_edge:int=None,spr_spec_cfg:int=None,spr_spec_amp:int=None, add_100_mm_offset:int=None,
                   mp_top_x:int=None, mp_top_y:int=None, mp_bottom_x:int=None, mp_bottom_y:int=None, ref_mp:int=None ,
                   motion_distance:int=None, detect_snr:int=None, release_snr:int=None, motion_adjacent:int=None,
-                  dual_mode:int=None, high_accuracy_iterations:int=None, prox_distance:int=None, hv_cp_overload_detect:int=None, i2c_slave_address:int=None ):
+                  dual_mode:int=None, high_accuracy_iterations:int=None, prox_distance:int=None, hv_cp_overload_detect:int=None, i2c_slave_address:int=None,
+                  spad_select_8x8:int=None, distance_in_mm:int=None):
         """Function to reconfigure the device.
            The config page is loaded with the CMD_LOAD_CONFIG_PAGE command.
            The config registers are modified and the new config page is written with the CMD_WRITE_PAGE command.
@@ -312,6 +315,9 @@ class Tmf8829Application(Tmf8829Bootloader, Tmf8829AppCommon):
             prox_distance(int,optional): 8-bit unsigned integer, proximity detection distance in mm, defaults to None
             hv_cp_overload_detect(int,optional): set to 1 if HV CP overload should influcence the algorithm, defaults to None.
             i2c_slave_address(int,optional): 8-bit unsigned integer, has to be the shifted I2C slave address, defaults to None.
+            spad_select_8x8 (int,optional): 24 bit mask representing the spad to be selected per MP (in 8x8 mode only). Defaults to None.
+            distance_in_mm(int,optional): 1 bit, if set the distance is in mm not in 1/4mm. Is automatically set with command
+            _CMD_LOAD_CFG_8X8_EXTENDED_RANGE, is automatically cleared with all other pre-configure commands. Defaults to None.
             """
         self.sendCommand( Tmf8829AppRegs.TMF8829_CMD_STAT._cmd_stat._CMD_LOAD_CONFIG_PAGE )
         if (period != None):
@@ -541,6 +547,10 @@ class Tmf8829Application(Tmf8829Bootloader, Tmf8829AppCommon):
             if isinstance( self.hal, I2cHalRegisterIo ):    # if we use spi for communication, there is no need to do a special handling here
                 self.sendCommandSwitchI2CSlaveAddress(i2c_slave_address)
                 return
+        if (spad_select_8x8 != None):
+            self.hal.tx( Tmf8829ConfigRegs.TMF8829_CFG_SPAD_SELECT_8X8_0.addr, [spad_select_8x8%256, (spad_select_8x8>>8)%256, (spad_select_8x8>>16)%256] )   
+        if (distance_in_mm != None):
+            self.hal.tx( Tmf8829ConfigRegs.TMF8829_CFG_DISTANCE_RESOLUTION.addr, distance_in_mm )    
         self.sendCommand( Tmf8829AppRegs.TMF8829_CMD_STAT._cmd_stat._CMD_WRITE_PAGE )
 
     def loadConfig(self) -> bytearray:
