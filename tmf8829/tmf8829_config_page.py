@@ -1352,6 +1352,62 @@ class Tmf8829_config_page:
 		def __init__(self):
 			self.pre_delay = self._pre_delay.reset
 
+	class TMF8829_CFG_SPAD_SELECT_8X8_0(ctypes.LittleEndianStructure):
+		addr = 0x8c
+		_pack_ = 1
+		_fields_ = [
+			("spad_select_8x8_7_0",ctypes.c_uint8,8),
+			]
+		class _spad_select_8x8_7_0:
+			reset = 255
+			mask  = 255
+			width = 8
+			shift = 0
+		def __init__(self):
+			self.spad_select_8x8_7_0 = self._spad_select_8x8_7_0.reset
+
+	class TMF8829_CFG_SPAD_SELECT_8X8_1(ctypes.LittleEndianStructure):
+		addr = 0x8d
+		_pack_ = 1
+		_fields_ = [
+			("spad_select_8x8_15_8",ctypes.c_uint8,8),
+			]
+		class _spad_select_8x8_15_8:
+			reset = 255
+			mask  = 255
+			width = 8
+			shift = 0
+		def __init__(self):
+			self.spad_select_8x8_15_8 = self._spad_select_8x8_15_8.reset
+
+	class TMF8829_CFG_SPAD_SELECT_8X8_2(ctypes.LittleEndianStructure):
+		addr = 0x8e
+		_pack_ = 1
+		_fields_ = [
+			("spad_select_8x8_23_16",ctypes.c_uint8,8),
+			]
+		class _spad_select_8x8_23_16:
+			reset = 255
+			mask  = 255
+			width = 8
+			shift = 0
+		def __init__(self):
+			self.spad_select_8x8_23_16 = self._spad_select_8x8_23_16.reset
+
+	class TMF8829_CFG_DISTANCE_RESOLUTION(ctypes.LittleEndianStructure):
+		addr = 0x8f
+		_pack_ = 1
+		_fields_ = [
+			("distance_in_mm",ctypes.c_uint8,1),
+			]
+		class _distance_in_mm:
+			reset = 0
+			mask  = 1
+			width = 1
+			shift = 0
+		def __init__(self):
+			self.distance_in_mm = self._distance_in_mm.reset
+
 	class TMF8829_CFG_I2C_ADDRESS(ctypes.LittleEndianStructure):
 		addr = 0x90
 		_pack_ = 1
@@ -1602,6 +1658,10 @@ class Tmf8829_config_page:
 		self.TMF8829_CFG_GPIO_5 = Tmf8829_config_page.TMF8829_CFG_GPIO_5()
 		self.TMF8829_CFG_GPIO_6 = Tmf8829_config_page.TMF8829_CFG_GPIO_6()
 		self.TMF8829_CFG_GPIO = Tmf8829_config_page.TMF8829_CFG_GPIO()
+		self.TMF8829_CFG_SPAD_SELECT_8X8_0 = Tmf8829_config_page.TMF8829_CFG_SPAD_SELECT_8X8_0()
+		self.TMF8829_CFG_SPAD_SELECT_8X8_1 = Tmf8829_config_page.TMF8829_CFG_SPAD_SELECT_8X8_1()
+		self.TMF8829_CFG_SPAD_SELECT_8X8_2 = Tmf8829_config_page.TMF8829_CFG_SPAD_SELECT_8X8_2()
+		self.TMF8829_CFG_DISTANCE_RESOLUTION = Tmf8829_config_page.TMF8829_CFG_DISTANCE_RESOLUTION()
 		self.TMF8829_CFG_I2C_ADDRESS = Tmf8829_config_page.TMF8829_CFG_I2C_ADDRESS()
 		self.TMF8829_CFG_ALG_XTALK_DISTANCE_MM = Tmf8829_config_page.TMF8829_CFG_ALG_XTALK_DISTANCE_MM()
 		self.TMF8829_CFG_ALG_XTALK_MAX_LSB = Tmf8829_config_page.TMF8829_CFG_ALG_XTALK_MAX_LSB()

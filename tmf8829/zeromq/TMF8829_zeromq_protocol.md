@@ -60,8 +60,6 @@ Here's the list of valid request identifiers:
  Stop Measurements                              | 0x11
  Get Configuration                              | 0x20
  Set Configuration                              | 0x21
- Get Diagnostics                                | 0x22
- Set Diagnostics                                | 0x23
  Set Preconfiguration                           | 0x24
  Update Target Binaries (Raspberry Pi only)     | 0xA0
  RESERVED                                       | 0xFE
@@ -384,6 +382,14 @@ Data is 24-bits for each bin, there are 2 histogram frames each has:
 - T0 contains: r[0..3]b[0..63] and x[0..3]|y[0..7]b[0..255],
 - T1 contains: r[0..3]b[0..63] and x[4..7]|y[0..7]b[0..255],
 
+###### 8x8 Dual mode tdc counting:
+
+- High Accuracy: T0, T1
+- Long Range:    T0, T1
+
+
+This defines the order in which the pixels from the histograms have to be read.
+
 #### 16x16 mode histograms
 
 Data is 24-bits for each bin, there are 2 histogram frames each has:
@@ -392,6 +398,13 @@ Data is 24-bits for each bin, there are 2 histogram frames each has:
 
 - T0 contains: r[0..3]b[0..63] and  x[0..7]|y[0..15]b[0..63],
 - T1 contains: r[0..3]b[0..63] and  x[8..15]|y[0..15]b[0..63],
+
+###### 16x16 Dual mode tdc counting:
+
+- High Accuracy: T0, T1
+- Long Range:    T0, T1
+
+This defines the order in which the pixels from the histograms have to be read.
 
 #### 32x32 mode histograms
 
@@ -408,6 +421,15 @@ Data is 24-bits for each bin, there are 8 histogram frames each has:
 - T5 contains: r[0..3]b[0..63] and  x[16,18,20,22,24,26,28,30]|y[1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31]b[0..63],
 - T6 contains: r[0..3]b[0..63] and  x[1,3,5,7,9,11,13,15]     |y[1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31]b[0..63],
 - T7 contains: r[0..3]b[0..63] and  x[17,19,21,23,25,27,29,31]|y[1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31]b[0..63],
+
+###### 32x32 Dual mode tdc counting:
+
+- High Accuracy: T0, T1, T2, T3
+- Long Range:    T0, T1, T2, T3
+- High Accuracy: T4, T5, T6, T7
+- Long Range:    T4, T5, T6, T7 
+
+This defines the order in which the pixels from the histograms have to be read.
 
 #### 48x32 mode histograms
 
@@ -428,3 +450,12 @@ Data is 24-bits for each bin, there are 12 histogram frames each has:
 - T9 contains: r[0..3]b[0..63] and  x[25,28,31,34,37,40,43,46] |y[1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31]b[0..63],
 - T10contains: r[0..3]b[0..63] and  x[2,5,8,11,14,17,20,23]    |y[1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31]b[0..63],
 - T11contains: r[0..3]b[0..63] and  x[26,29,32,35,38,41,44,47] |y[1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31]b[0..63],
+
+###### 48x32 Dual mode tdc counting:
+
+- High Accuracy: T0, T1, T2, T3, T4, T5
+- Long Range:    T0, T1, T2, T3, T4, T5
+- High Accuracy: T6, T7, T8, T9, T10, T11
+- Long Range:    T6, T7, T8, T9, T10, T11 
+
+This defines the order in which the pixels from the histograms have to be read.
